@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api";
+const API_URL = "https://hauzserver.onrender.com/api";
 
 export const API_ENDPOINTS = {
   LOGIN: `${API_URL}/auth/login`,
