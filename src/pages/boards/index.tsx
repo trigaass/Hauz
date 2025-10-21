@@ -15,11 +15,11 @@ const ContentWrapper = styled.div`
 
 interface BoardsProps {
   boardId: number;
-  userId: number;    // ✅ Mantém na interface
+  userId?: number;
   isAdmin: boolean;
 }
 
-export const Boards = ({ boardId, userId, isAdmin }: BoardsProps) => {
+export const Boards = ({ boardId, isAdmin }: BoardsProps) => {
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
 
