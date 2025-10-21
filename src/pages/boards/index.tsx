@@ -15,7 +15,7 @@ const ContentWrapper = styled.div`
 
 interface BoardsProps {
   boardId: number;
-  userId: number;
+  userId: number;    // ✅ Mantém na interface
   isAdmin: boolean;
 }
 

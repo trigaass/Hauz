@@ -1,34 +1,30 @@
 import axios from "axios";
-import { API_BASE_URL } from "./api";
 
-const api = axios.create({
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-api.interceptors.request.use(
+// Interceptor para adicionar token
+axiosInstance.interceptors.request.use(
   (config) => {
-    const user = localStorage.getItem("user");
-    if (user) {
-      const userData = JSON.parse(user);
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user?.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
     }
     return config;
   },
-  (error) => Promise.reject(error)
-);
-
-// Interceptor para tratamento de erros
-api.interceptors.response.use(
-  (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("user");
-      window.location.href = "/login";
-    }
     return Promise.reject(error);
   }
 );
 
-export default api;
+export default axiosInstance;

@@ -63,7 +63,6 @@ export const Tasks = ({ cardId }: TasksProps) => {
       const result = await tasksAPI.create(payload);
 
       if (result.taskId) {
-        alert("Task criada com sucesso!");
         setNewTaskContent("");
         setNewTaskImageFile(null);
         setNewTaskImagePreview(null);

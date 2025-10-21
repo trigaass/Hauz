@@ -1,6 +1,5 @@
 const API_URL = "http://localhost:3000/api";
 
-// Exportar endpoints para uso externo
 export const API_ENDPOINTS = {
   LOGIN: `${API_URL}/auth/login`,
   COMPANIES: `${API_URL}/companies`,
