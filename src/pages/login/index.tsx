@@ -53,8 +53,8 @@ export const Login = () => {
   return (
     <LoginContainer>
       <ImageContainer>
-        <img src="src/assets/logo/hauzlogoredu.png" />
-        <img src="src/assets/logo/hauzlogo.png" />
+        <img src="/logo/hauzlogoredu.png" alt="Logo Hauz" />
+        <img src="/logo/hauzlogo.png" alt="Hauz" />
       </ImageContainer>
 
       <FormContainer onSubmit={handleSubmit}>

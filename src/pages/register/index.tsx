@@ -41,7 +41,9 @@ export const RegisterUser = () => {
       } catch (err) {
         console.error("Erro ao carregar empresas:", err);
         setCompanies([]);
-        setError(err instanceof Error ? err.message : "Erro ao carregar empresas");
+        setError(
+          err instanceof Error ? err.message : "Erro ao carregar empresas"
+        );
       } finally {
         setLoading(false);
       }
@@ -103,8 +105,8 @@ export const RegisterUser = () => {
       <GlobalStyle />
       <RegisterContainer>
         <ImageContainer>
-          <img src="src/assets/logo/hauzlogoredu.png" />
-          <img src="src/assets/logo/hauzlogo.png" />
+          <img src="/logo/hauzlogoredu.png" alt="Logo Hauz" />
+          <img src="/logo/hauzlogo.png" alt="Hauz" />
         </ImageContainer>
 
         <FormContainer onSubmit={handleRegister}>

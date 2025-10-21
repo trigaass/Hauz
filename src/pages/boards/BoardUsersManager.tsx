@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
-import { boardsAPI } from "../../configs/api";
+import { API_ENDPOINTS, boardsAPI } from "../../configs/api";
 
 interface BoardUser {
   id: number;
@@ -46,7 +46,7 @@ export const BoardUsersManager = ({ boardId, adminId, companyId, isAdmin }: Prop
 
   const loadAllUsers = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/users?company_id=${companyId}`);
+      const response = await fetch(`${API_ENDPOINTS.USERS}?company_id=${companyId}`);
       const users = await response.json();
       setAllUsers(users);
     } catch (error) {

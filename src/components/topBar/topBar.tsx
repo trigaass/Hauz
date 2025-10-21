@@ -13,14 +13,12 @@ export const TopBar = () => {
             <span></span>
             <span></span>
           </Hamburger>
-          <Logo src="src/assets/logo/hauzlogo.png" />
+          <Logo src="/logo/hauzlogo.png" alt="Hauz" />
         </LeftSection>
-
       </TopBarContainer>
 
       <Sidebar open={open}>
-        <SidebarContent>
-        </SidebarContent>
+        <SidebarContent></SidebarContent>
       </Sidebar>
 
       {open && <Overlay onClick={() => setOpen(false)} />}

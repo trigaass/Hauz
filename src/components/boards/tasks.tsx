@@ -20,7 +20,9 @@ export const Tasks = ({ cardId }: TasksProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskContent, setNewTaskContent] = useState("");
   const [newTaskImageFile, setNewTaskImageFile] = useState<File | null>(null);
-  const [newTaskImagePreview, setNewTaskImagePreview] = useState<string | null>(null);
+  const [newTaskImagePreview, setNewTaskImagePreview] = useState<string | null>(
+    null
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -80,7 +82,7 @@ export const Tasks = ({ cardId }: TasksProps) => {
     if (!file) return;
 
     // Validar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       alert("Por favor, selecione apenas imagens!");
       return;
     }
@@ -106,9 +108,11 @@ export const Tasks = ({ cardId }: TasksProps) => {
   const handleToggleComplete = async (id: number, completed: boolean) => {
     try {
       await tasksAPI.update(id, { completed: !completed });
-      setTasks(tasks.map(task => 
-        task.id === id ? { ...task, completed: !completed } : task
-      ));
+      setTasks(
+        tasks.map((task) =>
+          task.id === id ? { ...task, completed: !completed } : task
+        )
+      );
     } catch (error) {
       console.error("Erro ao atualizar task:", error);
     }
@@ -119,7 +123,7 @@ export const Tasks = ({ cardId }: TasksProps) => {
 
     try {
       await tasksAPI.delete(id);
-      setTasks(tasks.filter(task => task.id !== id));
+      setTasks(tasks.filter((task) => task.id !== id));
       alert("Task deletada com sucesso!");
     } catch (error) {
       console.error("Erro ao deletar task:", error);
@@ -150,9 +154,11 @@ export const Tasks = ({ cardId }: TasksProps) => {
   const handleSaveEditedImage = (editedImageBase64: string) => {
     // Converter base64 para File
     fetch(editedImageBase64)
-      .then(res => res.blob())
-      .then(blob => {
-        const file = new File([blob], "edited-image.png", { type: "image/png" });
+      .then((res) => res.blob())
+      .then((blob) => {
+        const file = new File([blob], "edited-image.png", {
+          type: "image/png",
+        });
         setNewTaskImageFile(file);
         setNewTaskImagePreview(editedImageBase64);
         setIsEditing(false);
@@ -168,11 +174,11 @@ export const Tasks = ({ cardId }: TasksProps) => {
           <TaskItem key={task.id}>
             {task.image_url && (
               <TaskImageContainer>
-                <TaskImage 
-                  src={`http://localhost:3000${task.image_url}`} 
-                  alt="task" 
+                <TaskImage
+                  src={`https://hauzserver.onrender.com${task.image_url}`}
+                  alt="task"
                 />
-                <DeleteImageButton 
+                <DeleteImageButton
                   onClick={() => handleDeleteTaskImage(task.id)}
                   title="Remover imagem"
                 >
@@ -180,7 +186,7 @@ export const Tasks = ({ cardId }: TasksProps) => {
                 </DeleteImageButton>
               </TaskImageContainer>
             )}
-            
+
             <TaskRow>
               <TaskCheckbox
                 type="checkbox"
@@ -202,11 +208,13 @@ export const Tasks = ({ cardId }: TasksProps) => {
         {newTaskImagePreview && !isEditing && (
           <PreviewContainer>
             <img src={newTaskImagePreview} alt="preview" />
-            <RemovePreviewButton onClick={() => {
-              setNewTaskImageFile(null);
-              setNewTaskImagePreview(null);
-              if (fileInputRef.current) fileInputRef.current.value = "";
-            }}>
+            <RemovePreviewButton
+              onClick={() => {
+                setNewTaskImageFile(null);
+                setNewTaskImagePreview(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+            >
               ×
             </RemovePreviewButton>
           </PreviewContainer>
@@ -221,7 +229,11 @@ export const Tasks = ({ cardId }: TasksProps) => {
             onKeyPress={handleKeyPress}
           />
           <InputImage>
-            <label htmlFor="imageInput" className="file-label" title="Adicionar imagem">
+            <label
+              htmlFor="imageInput"
+              className="file-label"
+              title="Adicionar imagem"
+            >
               📷
             </label>
             <input
@@ -328,8 +340,8 @@ const TaskCheckbox = styled.input`
 const TaskContent = styled.span<{ completed: boolean }>`
   flex: 1;
   font-size: 14px;
-  text-decoration: ${props => props.completed ? "line-through" : "none"};
-  color: ${props => props.completed ? "#999" : "#f2f2f2"};
+  text-decoration: ${(props) => (props.completed ? "line-through" : "none")};
+  color: ${(props) => (props.completed ? "#999" : "#f2f2f2")};
 `;
 
 const DeleteTaskButton = styled.button`
