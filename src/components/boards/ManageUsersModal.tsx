@@ -30,7 +30,7 @@ export const ManageUsersModal = ({ boardId, companyId, onClose }: ManageUsersMod
       setLoading(true);
       
       // Buscar usuários do board
-      const boardUsersResponse = await fetch(API_ENDPOINTS.BOARD_USERS(boardId));
+      const boardUsersResponse = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users`);
       if (!boardUsersResponse.ok) {
         throw new Error("Erro ao buscar usuários do board");
       }
