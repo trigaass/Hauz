@@ -1,7 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://hauzserver.onrender.com";
 
 export const API_ENDPOINTS = {
-  // ✅ CORRIGIDO: Agora aponta para /api/auth/login
   LOGIN: `${API_BASE_URL}/api/auth/login`,
   USERS: `${API_BASE_URL}/api/users`,
   COMPANIES: `${API_BASE_URL}/api/companies`,
@@ -19,8 +18,8 @@ export const boardsAPI = {
     return response.json();
   },
 
-  // ✅ Criar board
-  create: async (data: { name: string; company_id: number }) => {
+  // ✅ Criar board (agora com descrição opcional)
+  create: async (data: { name: string; company_id: number; description?: string }) => {
     const response = await fetch(API_ENDPOINTS.BOARDS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -51,35 +50,26 @@ export const boardsAPI = {
     const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        user_id: userId, 
-        admin_id: adminId 
-      }),
+      body: JSON.stringify({ user_id: userId, admin_id: adminId }),
     });
-    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || "Erro ao adicionar usuário");
     }
-    
     return response.json();
   },
 
-  // ✅ CORRIGIDO: admin_id agora vai no BODY, não na query string
+  // ✅ Remover usuário de um board
   removeUser: async (boardId: number, userId: number, adminId: number) => {
     const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users/${userId}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        admin_id: adminId 
-      }),
+      body: JSON.stringify({ admin_id: adminId }),
     });
-    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || "Erro ao remover usuário");
     }
-    
     return response.json();
   },
 };
@@ -134,10 +124,7 @@ export const tasksAPI = {
     formData.append("card_id", data.card_id.toString());
     formData.append("content", data.content);
     formData.append("position", data.position.toString());
-
-    if (data.image) {
-      formData.append("image", data.image);
-    }
+    if (data.image) formData.append("image", data.image);
 
     const response = await fetch(API_ENDPOINTS.TASKS, {
       method: "POST",
