@@ -1,7 +1,8 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://hauzserver.onrender.com";
 
 export const API_ENDPOINTS = {
-  LOGIN: `${API_BASE_URL}/api/login`,
+  // ✅ CORRIGIDO: Agora aponta para /api/auth/login
+  LOGIN: `${API_BASE_URL}/api/auth/login`,
   USERS: `${API_BASE_URL}/api/users`,
   COMPANIES: `${API_BASE_URL}/api/companies`,
   BOARDS: `${API_BASE_URL}/api/boards`,
@@ -11,13 +12,15 @@ export const API_ENDPOINTS = {
 
 // ========== BOARDS API ==========
 export const boardsAPI = {
-  getAll: async (userId: number, role: string) => {
-    const response = await fetch(`${API_ENDPOINTS.BOARDS}?user_id=${userId}&role=${role}`);
+  // ✅ Buscar todos os boards de uma empresa
+  getAll: async (companyId: number) => {
+    const response = await fetch(`${API_ENDPOINTS.BOARDS}?company_id=${companyId}`);
     if (!response.ok) throw new Error("Erro ao carregar boards");
     return response.json();
   },
 
-  create: async (data: { name: string; description?: string; company_id: number; created_by: number }) => {
+  // ✅ Criar board
+  create: async (data: { name: string; company_id: number }) => {
     const response = await fetch(API_ENDPOINTS.BOARDS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -27,41 +30,56 @@ export const boardsAPI = {
     return response.json();
   },
 
-  delete: async (id: number, userId: number, role: string) => {
-    const response = await fetch(`${API_ENDPOINTS.BOARDS}/${id}?user_id=${userId}&role=${role}`, {
+  // ✅ Deletar board
+  delete: async (id: number) => {
+    const response = await fetch(`${API_ENDPOINTS.BOARDS}/${id}`, {
       method: "DELETE",
     });
     if (!response.ok) throw new Error("Erro ao deletar board");
     return response.json();
   },
 
+  // ✅ Buscar usuários de um board
   getUsers: async (boardId: number) => {
     const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users`);
     if (!response.ok) throw new Error("Erro ao carregar usuários do board");
     return response.json();
   },
 
+  // ✅ Adicionar usuário ao board
   addUser: async (boardId: number, userId: number, adminId: number) => {
     const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, admin_id: adminId }),
+      body: JSON.stringify({ 
+        user_id: userId, 
+        admin_id: adminId 
+      }),
     });
+    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || "Erro ao adicionar usuário");
     }
+    
     return response.json();
   },
 
+  // ✅ CORRIGIDO: admin_id agora vai no BODY, não na query string
   removeUser: async (boardId: number, userId: number, adminId: number) => {
-    const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users/${userId}?admin_id=${adminId}`, {
+    const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users/${userId}`, {
       method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        admin_id: adminId 
+      }),
     });
+    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || "Erro ao remover usuário");
     }
+    
     return response.json();
   },
 };
