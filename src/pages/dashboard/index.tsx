@@ -126,9 +126,12 @@ export const Dashboard = () => {
     <>
       <GlobalStyle />
       <DashBoardContainer>
-        <TopBar />
+        <TopBar
+          isAdmin={true} // ou false
+          onLogout={() => console.log("Usuário saiu")}
+          onAddUser={() => console.log("Adicionar novo usuário")}
+        />
 
-        {/* Mensagem de boas-vindas */}
         <WelcomeMessage>
           <h2>Bem-vindo, {currentUser.email}!</h2>
           <p>
@@ -343,8 +346,8 @@ const ModalOverlay = styled.div`
 const ModalContent = styled.div`
   background-color: #1c2230;
   border-radius: 16px;
-  width: 85vw;
-  height: 85vh;
+  width: 95vw;
+  height: 95vh;
   overflow: auto;
   border: 1px solid #2a2f3f;
   display: flex;

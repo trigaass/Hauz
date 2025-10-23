@@ -1,8 +1,27 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
 
-export const TopBar = () => {
-  const [open, setOpen] = useState(false);
+interface TopBarProps {
+  isAdmin?: boolean; // controla se o usuário é admin
+  onLogout?: () => void; // função chamada ao clicar em sair
+  onAddUser?: () => void; // função chamada ao clicar em adicionar usuário
+}
+
+export const TopBar = ({ isAdmin = false, onLogout, onAddUser }: TopBarProps) => {
+  const [open, setOpen] = useState(false); // sidebar
+  const [menuOpen, setMenuOpen] = useState(false); // menu de perfil
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Fecha o menu de perfil ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <>
@@ -15,6 +34,21 @@ export const TopBar = () => {
           </Hamburger>
           <Logo src="/logo/hauzlogo.png" alt="Hauz" />
         </LeftSection>
+
+        <RightSection ref={menuRef}>
+          <ProfileIcon
+            src="/icons/perfil-de-usuario.png"
+            alt="Perfil"
+            onClick={() => setMenuOpen(!menuOpen)}
+          />
+
+          {menuOpen && (
+            <DropdownMenu>
+              {isAdmin && <MenuItem onClick={onAddUser}>Adicionar Usuário</MenuItem>}
+              <MenuItem onClick={onLogout}>Sair</MenuItem>
+            </DropdownMenu>
+          )}
+        </RightSection>
       </TopBarContainer>
 
       <Sidebar open={open}>
@@ -25,6 +59,8 @@ export const TopBar = () => {
     </>
   );
 };
+
+// ================== Styled Components ==================
 
 const TopBarContainer = styled.div`
   width: 100%;
@@ -37,13 +73,22 @@ const TopBarContainer = styled.div`
   padding: 0 16px;
   position: fixed;
   top: 0;
-  z-index: 100;
+  left: 0;
+  z-index: 200;
 `;
 
 const LeftSection = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
+`;
+
+const RightSection = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-right: 40px;
 `;
 
 const Hamburger = styled.div`
@@ -68,6 +113,67 @@ const Logo = styled.img`
   cursor: pointer;
 `;
 
+const ProfileIcon = styled.img`
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+`;
+
+// ========== MENU DE PERFIL ==========
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background-color: #1c1c1c;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 500;
+  animation: fadeIn 0.2s ease forwards;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
+const MenuItem = styled.div`
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #eee;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #2a2a2a;
+  }
+
+  &:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+
+  &:last-child {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+`;
+
 interface SidebarProps {
   open: boolean;
 }
@@ -81,33 +187,13 @@ const Sidebar = styled.div<SidebarProps>`
   background-color: #181818;
   color: white;
   transition: left 0.3s ease;
-  z-index: 99;
-  padding-top: 60px; /* pra não ficar atrás da topbar */
+  z-index: 300;
+  padding-top: 60px;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.4);
 `;
 
 const SidebarContent = styled.div`
   padding: 20px;
-
-  h3 {
-    margin-bottom: 10px;
-  }
-
-  ul {
-    list-style: none;
-    padding: 0;
-
-    li {
-      padding: 10px 0;
-      cursor: pointer;
-      transition: 0.2s;
-
-      &:hover {
-        background: #222;
-        border-radius: 6px;
-        padding-left: 8px;
-      }
-    }
-  }
 `;
 
 const Overlay = styled.div`

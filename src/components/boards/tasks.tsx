@@ -182,7 +182,7 @@ export const Tasks = ({ cardId }: TasksProps) => {
                   onClick={() => handleDeleteTaskImage(task.id)}
                   title="Remover imagem"
                 >
-                  🗑️
+                  x
                 </DeleteImageButton>
               </TaskImageContainer>
             )}
@@ -234,7 +234,7 @@ export const Tasks = ({ cardId }: TasksProps) => {
               className="file-label"
               title="Adicionar imagem"
             >
-              📷
+              ☰
             </label>
             <input
               id="imageInput"
@@ -246,7 +246,7 @@ export const Tasks = ({ cardId }: TasksProps) => {
             />
           </InputImage>
           {(newTaskContent || newTaskImageFile) && (
-            <AddTaskButton onClick={handleAddTask}>Add</AddTaskButton>
+            <AddTaskButton onClick={handleAddTask}>+</AddTaskButton>
           )}
         </InputRow>
       </AddTaskContainer>

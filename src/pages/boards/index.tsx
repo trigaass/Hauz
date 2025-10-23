@@ -7,10 +7,8 @@ const BoardsContainer = styled.div`
 `;
 
 const ContentWrapper = styled.div`
-  margin-top: 20px;
   color: #999;
   text-align: center;
-  padding: 40px 0;
 `;
 
 interface BoardsProps {
