@@ -128,17 +128,19 @@ export const Dashboard = () => {
       <DashBoardContainer>
         <TopBar
           isAdmin={true} // ou false
-          onLogout={() => console.log("Usuário saiu")}
-          onAddUser={() => console.log("Adicionar novo usuário")}
+          onLogout={() => navigate("/login")}
+          onAddUser={() => navigate("/register-user")}
         />
 
         <WelcomeMessage>
-          <h2>Bem-vindo, {currentUser.email}!</h2>
-          <p>
-            {isAdmin
-              ? "Você é administrador - pode criar e gerenciar todos os boards da sua empresa"
-              : "Você pode visualizar os boards aos quais foi atribuído"}
-          </p>
+          <TopRow>
+            <h2>Bem-vindo, {currentUser.email}!</h2>
+            <p>{isAdmin ? "(Admin)" : "(user)"}</p>
+          </TopRow>
+
+          {isAdmin && (
+            <AddButton onClick={handleNewBoard}>+ Novo Board</AddButton>
+          )}
         </WelcomeMessage>
 
         {/* Lista de Boards */}
@@ -180,10 +182,6 @@ export const Dashboard = () => {
           ))}
         </BoardContainer>
 
-        {isAdmin && (
-          <AddButton onClick={handleNewBoard}>+ Novo Board</AddButton>
-        )}
-
         {/* Modal de Board */}
         {selectedBoardId !== null && (
           <ModalOverlay onClick={closeModal}>
@@ -224,12 +222,17 @@ const DashBoardContainer = styled.div`
   min-height: 100vh;
 `;
 
+const TopRow = styled.div``;
+
 const WelcomeMessage = styled.div`
   margin-top: 30px;
   padding: 20px;
   background-color: #1c2230;
   border: 1px solid #2a2f3f;
   border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
   h2 {
     margin: 0 0 10px 0;
@@ -242,6 +245,10 @@ const WelcomeMessage = styled.div`
     margin: 0;
     color: #ccc;
     font-size: 14px;
+  }
+
+  button{
+  margin-bottom: 15px;
   }
 `;
 
