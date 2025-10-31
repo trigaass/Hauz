@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Boards } from "../boards";
 import { boardsAPI } from "../../configs/api";
 import { useNavigate } from "react-router-dom";
+import { FiImage } from "react-icons/fi";
+import { ImageGalleryModal } from "../boards/ImageGalleryModal";
 
 interface Board {
   id: number;
@@ -40,9 +42,10 @@ export const Dashboard = () => {
   const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [galleryBoardId, setGalleryBoardId] = useState<number | null>(null);
+  const [galleryBoardName, setGalleryBoardName] = useState<string>("");
   const navigate = useNavigate();
 
-  // Carregar usuário e boards
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (!storedUser) {
@@ -63,7 +66,6 @@ export const Dashboard = () => {
   const loadBoards = async (companyId: number) => {
     setLoading(true);
     try {
-      // ✅ API corrigida: recebe apenas company_id
       const data = await boardsAPI.getAll(companyId);
       setBoards(data);
     } catch (error) {
@@ -99,7 +101,6 @@ export const Dashboard = () => {
   const removeBoard = async (id: number) => {
     if (!confirm("Deseja realmente excluir este board?")) return;
     try {
-      // ✅ API corrigida: delete recebe apenas o id
       await boardsAPI.delete(id);
       alert("Board excluído com sucesso!");
       if (currentUser) loadBoards(currentUser.company_id);
@@ -111,6 +112,17 @@ export const Dashboard = () => {
 
   const openBoard = (id: number) => setSelectedBoardId(id);
   const closeModal = () => setSelectedBoardId(null);
+
+  const openGallery = (boardId: number, boardName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setGalleryBoardId(boardId);
+    setGalleryBoardName(boardName);
+  };
+
+  const closeGallery = () => {
+    setGalleryBoardId(null);
+    setGalleryBoardName("");
+  };
 
   if (loading) {
     return <LoadingContainer>Carregando...</LoadingContainer>;
@@ -127,7 +139,7 @@ export const Dashboard = () => {
       <GlobalStyle />
       <DashBoardContainer>
         <TopBar
-          isAdmin={true} // ou false
+          isAdmin={isAdmin}
           onLogout={() => navigate("/login")}
           onAddUser={() => navigate("/register-user")}
         />
@@ -148,14 +160,16 @@ export const Dashboard = () => {
           {boards.length === 0 && (
             <EmptyState>
               <p>Nenhum board {isAdmin ? "criado" : "atribuído"} ainda.</p>
-              {isAdmin && <p>Clique em “+ Novo Board” para começar!</p>}
+              {isAdmin && <p>Clique em "+ Novo Board" para começar!</p>}
             </EmptyState>
           )}
 
           {boards.map((board) => (
             <BoardLink key={board.id} onClick={() => openBoard(board.id)}>
               <BoardInfo>
-                <span className="board-name">{board.name}</span>
+                <BoardNameRow>
+                  <span className="board-name">{board.name}</span>
+                </BoardNameRow>
                 {board.description && (
                   <span className="board-desc">{board.description}</span>
                 )}
@@ -166,7 +180,6 @@ export const Dashboard = () => {
                 )}
               </BoardInfo>
 
-              {/* Apenas admins podem deletar boards */}
               {isAdmin && (
                 <DeleteButton
                   onClick={(e) => {
@@ -188,7 +201,19 @@ export const Dashboard = () => {
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
                 <h2>{boards.find((b) => b.id === selectedBoardId)?.name}</h2>
-                <CloseButton onClick={closeModal}>×</CloseButton>
+                <HeaderActions>
+                  <GalleryButtonHeader
+                    onClick={(e) => {
+                      const b = boards.find((b) => b.id === selectedBoardId);
+                      if (b) openGallery(b.id, b.name, e);
+                    }}
+                    title="Ver galeria de imagens"
+                  >
+                    <FiImage />
+                    <span>Visualizar Galeria</span>
+                  </GalleryButtonHeader>
+                  <CloseButton onClick={closeModal}>×</CloseButton>
+                </HeaderActions>
               </ModalHeader>
               <ModalBody>
                 <Boards
@@ -199,6 +224,14 @@ export const Dashboard = () => {
               </ModalBody>
             </ModalContent>
           </ModalOverlay>
+        )}
+
+        {galleryBoardId !== null && (
+          <ImageGalleryModal
+            boardId={galleryBoardId}
+            boardName={galleryBoardName}
+            onClose={closeGallery}
+          />
         )}
       </DashBoardContainer>
     </>
@@ -248,7 +281,7 @@ const WelcomeMessage = styled.div`
   }
 
   button{
-  margin-bottom: 15px;
+    margin-bottom: 15px;
   }
 `;
 
@@ -290,6 +323,8 @@ const BoardInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 5px;
+  flex: 1;
+  
   .board-name {
     font-weight: 700;
     font-size: 18px;
@@ -304,6 +339,13 @@ const BoardInfo = styled.div`
     color: #888;
     margin-top: 5px;
   }
+`;
+
+const BoardNameRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 `;
 
 const DeleteButton = styled.button`
@@ -367,11 +409,47 @@ const ModalHeader = styled.div`
   align-items: center;
   padding: 22px 30px;
   border-bottom: 1px solid #2a2f3f;
+  
   h2 {
     margin: 0;
     color: #ff006c;
     font-size: 24px;
     font-weight: 800;
+  }
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const GalleryButtonHeader = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background-color: rgba(255, 0, 108, 0.1);
+  border: 1px solid #ff006c;
+  color: #ff006c;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: #ff006c;
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  svg {
+    font-size: 18px;
+  }
+
+  span {
+    white-space: nowrap;
   }
 `;
 
@@ -384,6 +462,11 @@ const CloseButton = styled.button`
   border-radius: 6px;
   width: 40px;
   height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  
   &:hover {
     background-color: #2a2f3f;
     color: #fff;

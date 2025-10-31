@@ -11,14 +11,14 @@ export const API_ENDPOINTS = {
 
 // ========== BOARDS API ==========
 export const boardsAPI = {
-  // ✅ Buscar todos os boards de uma empresa
+  // Buscar todos os boards de uma empresa
   getAll: async (companyId: number) => {
     const response = await fetch(`${API_ENDPOINTS.BOARDS}?company_id=${companyId}`);
     if (!response.ok) throw new Error("Erro ao carregar boards");
     return response.json();
   },
 
-  // ✅ Criar board (agora com descrição opcional)
+  // Criar board
   create: async (data: { name: string; company_id: number; description?: string }) => {
     const response = await fetch(API_ENDPOINTS.BOARDS, {
       method: "POST",
@@ -29,7 +29,7 @@ export const boardsAPI = {
     return response.json();
   },
 
-  // ✅ Deletar board
+  // Deletar board
   delete: async (id: number) => {
     const response = await fetch(`${API_ENDPOINTS.BOARDS}/${id}`, {
       method: "DELETE",
@@ -38,14 +38,21 @@ export const boardsAPI = {
     return response.json();
   },
 
-  // ✅ Buscar usuários de um board
+  // Buscar usuários de um board
   getUsers: async (boardId: number) => {
     const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users`);
     if (!response.ok) throw new Error("Erro ao carregar usuários do board");
     return response.json();
   },
 
-  // ✅ Adicionar usuário ao board
+  // 🆕 Buscar todas as imagens de um board
+  getImages: async (boardId: number) => {
+    const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/images`);
+    if (!response.ok) throw new Error("Erro ao carregar imagens do board");
+    return response.json();
+  },
+
+  // Adicionar usuário ao board
   addUser: async (boardId: number, userId: number, adminId: number) => {
     const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users`, {
       method: "POST",
@@ -59,7 +66,7 @@ export const boardsAPI = {
     return response.json();
   },
 
-  // ✅ Remover usuário de um board
+  // Remover usuário de um board
   removeUser: async (boardId: number, userId: number, adminId: number) => {
     const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users/${userId}`, {
       method: "DELETE",
