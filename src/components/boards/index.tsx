@@ -3,8 +3,8 @@ import styled, { createGlobalStyle } from "styled-components";
 import { Title } from "./title";
 import { Tasks } from "./tasks";
 import { cardsAPI } from "../../configs/api";
+import { ConfirmModal } from "./ConfirmModal";
 
-// ===== Tipagens =====
 interface Card {
   id: number;
   board_id: number;
@@ -16,7 +16,6 @@ interface CardsProps {
   boardId: number;
 }
 
-// ===== Fonte e Transições Globais =====
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
   * {
@@ -28,6 +27,12 @@ const GlobalStyle = createGlobalStyle`
 export const Cards = ({ boardId }: CardsProps) => {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   useEffect(() => {
     loadCards();
@@ -61,15 +66,22 @@ export const Cards = ({ boardId }: CardsProps) => {
     }
   };
 
-  const removeCard = async (id: number) => {
-    if (!confirm("Deseja realmente excluir este card?")) return;
-
-    try {
-      await cardsAPI.delete(id);
-      setCards(cards.filter((card) => card.id !== id));
-    } catch (error) {
-      console.error("Erro ao remover card:", error);
-    }
+  const removeCard = (id: number) => {
+    setConfirmAction({
+      title: "Excluir Card",
+      message: "Tem certeza que deseja excluir este card? Todas as tasks serão removidas.",
+      onConfirm: async () => {
+        try {
+          await cardsAPI.delete(id);
+          setCards(cards.filter((card) => card.id !== id));
+          setShowConfirm(false);
+        } catch (error) {
+          console.error("Erro ao remover card:", error);
+          alert("Erro ao remover card");
+        }
+      }
+    });
+    setShowConfirm(true);
   };
 
   const updateCardTitle = async (id: number, title: string) => {
@@ -102,11 +114,18 @@ export const Cards = ({ boardId }: CardsProps) => {
 
         <AddCardButton onClick={handleNewCard}>+ Novo Card</AddCardButton>
       </TasksContainer>
+
+      {showConfirm && confirmAction && (
+        <ConfirmModal
+          title={confirmAction.title}
+          message={confirmAction.message}
+          onConfirm={confirmAction.onConfirm}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
     </>
   );
 };
-
-// ======== Estilos (seguindo o tema do Dashboard) ========
 
 const LoadingText = styled.div`
   padding: 20px;

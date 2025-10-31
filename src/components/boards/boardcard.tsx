@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { FiUsers, FiEdit, FiTrash2, FiExternalLink } from "react-icons/fi";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface User {
   id: number;
@@ -28,17 +29,16 @@ interface BoardCardProps {
 
 export const BoardCard = ({ board, currentUser, onManageUsers, onDelete }: BoardCardProps) => {
   const [showUsers, setShowUsers] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
   const isAdmin = currentUser.role === 'admin';
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Não navegar se clicar em botões ou na seção de usuários
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('[data-users-section]')) {
       return;
     }
     
-    // Navegar para a página do board com o ID e nome
     navigate(`/boards/${board.id}`, { 
       state: { 
         boardName: board.name,
@@ -47,66 +47,84 @@ export const BoardCard = ({ board, currentUser, onManageUsers, onDelete }: Board
     });
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete(board.id);
+    setShowConfirm(false);
+  };
+
   return (
-    <Card onClick={handleCardClick}>
-      <CardHeader>
-        <BoardNameWrapper>
-          <BoardName>{board.name}</BoardName>
-          <OpenIcon title="Abrir board">
-            <FiExternalLink />
-          </OpenIcon>
-        </BoardNameWrapper>
-        {isAdmin && (
-          <Actions>
-            <ActionButton 
-              onClick={(e) => {
-                e.stopPropagation();
-                onManageUsers(board.id);
-              }} 
-              title="Gerenciar usuários"
-            >
-              <FiEdit />
-            </ActionButton>
-            <ActionButton 
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(board.id);
-              }} 
-              title="Excluir board"
-            >
-              <FiTrash2 />
-            </ActionButton>
-          </Actions>
-        )}
-      </CardHeader>
-      
-      {board.description && <Description>{board.description}</Description>}
-      
-      <InfoRow>
-        <Label>Empresa:</Label>
-        <Value>{board.company_name}</Value>
-      </InfoRow>
-      
-      <InfoRow>
-        <Label>Criado por:</Label>
-        <Value>{board.creator_email}</Value>
-      </InfoRow>
-      
-      <UsersSection data-users-section>
-        <UsersHeader onClick={() => setShowUsers(!showUsers)}>
-          <FiUsers />
-          <span>{board.users?.length || 0} usuário(s) com acesso</span>
-        </UsersHeader>
+    <>
+      <Card onClick={handleCardClick}>
+        <CardHeader>
+          <BoardNameWrapper>
+            <BoardName>{board.name}</BoardName>
+            <OpenIcon title="Abrir board">
+              <FiExternalLink />
+            </OpenIcon>
+          </BoardNameWrapper>
+          {isAdmin && (
+            <Actions>
+              <ActionButton 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onManageUsers(board.id);
+                }} 
+                title="Gerenciar usuários"
+              >
+                <FiEdit />
+              </ActionButton>
+              <ActionButton 
+                onClick={handleDeleteClick} 
+                title="Excluir board"
+              >
+                <FiTrash2 />
+              </ActionButton>
+            </Actions>
+          )}
+        </CardHeader>
         
-        {showUsers && board.users && board.users.length > 0 && (
-          <UsersList>
-            {board.users.map((user) => (
-              <UserItem key={user.id}>{user.email}</UserItem>
-            ))}
-          </UsersList>
-        )}
-      </UsersSection>
-    </Card>
+        {board.description && <Description>{board.description}</Description>}
+        
+        <InfoRow>
+          <Label>Empresa:</Label>
+          <Value>{board.company_name}</Value>
+        </InfoRow>
+        
+        <InfoRow>
+          <Label>Criado por:</Label>
+          <Value>{board.creator_email}</Value>
+        </InfoRow>
+        
+        <UsersSection data-users-section>
+          <UsersHeader onClick={() => setShowUsers(!showUsers)}>
+            <FiUsers />
+            <span>{board.users?.length || 0} usuário(s) com acesso</span>
+          </UsersHeader>
+          
+          {showUsers && board.users && board.users.length > 0 && (
+            <UsersList>
+              {board.users.map((user) => (
+                <UserItem key={user.id}>{user.email}</UserItem>
+              ))}
+            </UsersList>
+          )}
+        </UsersSection>
+      </Card>
+
+      {showConfirm && (
+        <ConfirmModal
+          title="Excluir Board"
+          message={`Tem certeza que deseja excluir o board "${board.name}"? Todos os cards e tasks serão removidos permanentemente.`}
+          onConfirm={confirmDelete}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
+    </>
   );
 };
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type ChangeEvent } from "react";
 import styled from "styled-components";
 import { tasksAPI } from "../../configs/api";
 import { ImageEditor } from "./canva";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface Task {
   id: number;
@@ -9,7 +10,7 @@ interface Task {
   content: string;
   completed: boolean;
   position: number;
-  image_url?: string; // 🆕 URL da imagem salva no servidor
+  image_url?: string;
 }
 
 interface TasksProps {
@@ -25,6 +26,15 @@ export const Tasks = ({ cardId }: TasksProps) => {
   );
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+
+  // Estados para modal de confirmação
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -50,14 +60,17 @@ export const Tasks = ({ cardId }: TasksProps) => {
       return;
     }
 
+    if (isAdding) return; // Previne múltiplos cliques
+
     try {
+      setIsAdding(true);
+
       const payload: any = {
         card_id: cardId,
         content: newTaskContent.trim() || "Imagem",
         position: tasks.length,
       };
 
-      // 🆕 Se tiver imagem, adicionar ao payload
       if (newTaskImageFile) {
         payload.image = newTaskImageFile;
       }
@@ -69,11 +82,13 @@ export const Tasks = ({ cardId }: TasksProps) => {
         setNewTaskImageFile(null);
         setNewTaskImagePreview(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
-        loadTasks();
+        await loadTasks();
       }
     } catch (error) {
       console.error("Erro ao criar task:", error);
       alert("Erro ao criar task: " + (error as Error).message);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -81,27 +96,23 @@ export const Tasks = ({ cardId }: TasksProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo de arquivo
     if (!file.type.startsWith("image/")) {
       alert("Por favor, selecione apenas imagens!");
       return;
     }
 
-    // Validar tamanho (5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert("A imagem deve ter no máximo 5MB!");
       return;
     }
 
-    // Ler arquivo para preview
     const reader = new FileReader();
     reader.onload = () => {
       setNewTaskImagePreview(reader.result as string);
-      setIsEditing(true); // Abrir editor
+      setIsEditing(true);
     };
     reader.readAsDataURL(file);
 
-    // Salvar o arquivo original
     setNewTaskImageFile(file);
   };
 
@@ -118,41 +129,49 @@ export const Tasks = ({ cardId }: TasksProps) => {
     }
   };
 
-  const handleDeleteTask = async (id: number) => {
-    if (!confirm("Deseja deletar esta task?")) return;
-
-    try {
-      await tasksAPI.delete(id);
-      setTasks(tasks.filter((task) => task.id !== id));
-      alert("Task deletada com sucesso!");
-    } catch (error) {
-      console.error("Erro ao deletar task:", error);
-      alert("Erro ao deletar task");
-    }
+  const handleDeleteTask = (id: number) => {
+    setConfirmAction({
+      title: "Excluir Task",
+      message: "Tem certeza que deseja excluir esta task?",
+      onConfirm: async () => {
+        try {
+          await tasksAPI.delete(id);
+          setTasks(tasks.filter((task) => task.id !== id));
+          setShowConfirm(false);
+        } catch (error) {
+          console.error("Erro ao deletar task:", error);
+          alert("Erro ao deletar task");
+        }
+      },
+    });
+    setShowConfirm(true);
   };
 
-  const handleDeleteTaskImage = async (taskId: number) => {
-    if (!confirm("Deseja remover apenas a imagem desta task?")) return;
-
-    try {
-      await tasksAPI.deleteImage(taskId);
-      alert("Imagem removida com sucesso!");
-      loadTasks();
-    } catch (error) {
-      console.error("Erro ao deletar imagem:", error);
-      alert("Erro ao deletar imagem");
-    }
+  const handleDeleteTaskImage = (taskId: number) => {
+    setConfirmAction({
+      title: "Remover Imagem",
+      message: "Tem certeza que deseja remover a imagem desta task?",
+      onConfirm: async () => {
+        try {
+          await tasksAPI.deleteImage(taskId);
+          await loadTasks();
+          setShowConfirm(false);
+        } catch (error) {
+          console.error("Erro ao deletar imagem:", error);
+          alert("Erro ao deletar imagem");
+        }
+      },
+    });
+    setShowConfirm(true);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !isAdding) {
       handleAddTask();
     }
   };
 
-  // 🆕 Salvar imagem editada
   const handleSaveEditedImage = (editedImageBase64: string) => {
-    // Converter base64 para File
     fetch(editedImageBase64)
       .then((res) => res.blob())
       .then((blob) => {
@@ -182,7 +201,7 @@ export const Tasks = ({ cardId }: TasksProps) => {
                   onClick={() => handleDeleteTaskImage(task.id)}
                   title="Remover imagem"
                 >
-                  x
+                  ×
                 </DeleteImageButton>
               </TaskImageContainer>
             )}
@@ -222,12 +241,13 @@ export const Tasks = ({ cardId }: TasksProps) => {
 
         <InputRow>
           <TaskInput
-            type="text"
             placeholder="+ Add a task"
             value={newTaskContent}
             onChange={(e) => setNewTaskContent(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
+            disabled={isAdding}
           />
+
           <InputImage>
             <label
               htmlFor="imageInput"
@@ -243,15 +263,17 @@ export const Tasks = ({ cardId }: TasksProps) => {
               ref={fileInputRef}
               onChange={handleFileChange}
               style={{ display: "none" }}
+              disabled={isAdding}
             />
           </InputImage>
           {(newTaskContent || newTaskImageFile) && (
-            <AddTaskButton onClick={handleAddTask}>+</AddTaskButton>
+            <AddTaskButton onClick={handleAddTask} disabled={isAdding}>
+              {isAdding ? "..." : "+"}
+            </AddTaskButton>
           )}
         </InputRow>
       </AddTaskContainer>
 
-      {/* Editor de imagem */}
       {isEditing && newTaskImagePreview && (
         <ImageEditor
           image={newTaskImagePreview}
@@ -259,6 +281,15 @@ export const Tasks = ({ cardId }: TasksProps) => {
           onClose={() => {
             setIsEditing(false);
           }}
+        />
+      )}
+
+      {showConfirm && confirmAction && (
+        <ConfirmModal
+          title={confirmAction.title}
+          message={confirmAction.message}
+          onConfirm={confirmAction.onConfirm}
+          onCancel={() => setShowConfirm(false)}
         />
       )}
     </TasksContainer>
@@ -276,6 +307,10 @@ const LoadingText = styled.div`
 
 const TasksContainer = styled.div`
   padding: 10px 0;
+  word-break: break-word; 
+  white-space: pre-wrap; 
+  max-width: 310px; 
+  overflow-wrap: anywhere;
 `;
 
 const TasksList = styled.div`
@@ -317,6 +352,7 @@ const DeleteImageButton = styled.button`
   padding: 4px 8px;
   cursor: pointer;
   font-size: 14px;
+  color: white;
   transition: 0.2s;
 
   &:hover {
@@ -326,7 +362,7 @@ const DeleteImageButton = styled.button`
 
 const TaskRow = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
 `;
 
@@ -342,6 +378,11 @@ const TaskContent = styled.span<{ completed: boolean }>`
   font-size: 14px;
   text-decoration: ${(props) => (props.completed ? "line-through" : "none")};
   color: ${(props) => (props.completed ? "#999" : "#f2f2f2")};
+  word-break: break-word;        
+  white-space: pre-wrap;     
+  overflow-wrap: anywhere;   
+  text-align: left;   
+  display: block;
 `;
 
 const DeleteTaskButton = styled.button`
@@ -406,7 +447,7 @@ const InputRow = styled.div`
   align-items: center;
 `;
 
-const TaskInput = styled.input`
+const TaskInput = styled.textarea`
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #3a3f4f;
@@ -415,6 +456,12 @@ const TaskInput = styled.input`
   border-radius: 4px;
   font-size: 14px;
   outline: none;
+  resize: none; /* 🔥 Impede redimensionamento manual */
+  min-height: 38px; /* Altura padrão */
+  max-height: 60px; /* 🔥 No máximo ~2 linhas */
+  overflow-y: auto; /* Mostra scroll se passar do limite */
+  line-height: 1.4;
+  white-space: pre-wrap;
 
   &:focus {
     border-color: #ff006c;
@@ -422,6 +469,11 @@ const TaskInput = styled.input`
 
   &::placeholder {
     color: #666;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
@@ -456,7 +508,12 @@ const AddTaskButton = styled.button`
   font-weight: 600;
   transition: 0.2s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: #ff4f9a;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;

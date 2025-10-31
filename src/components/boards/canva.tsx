@@ -27,17 +27,25 @@ export const ImageEditor = ({ image, onSave, onClose }: Props) => {
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [scale, setScale] = useState(1);
-  const [activeTool, setActiveTool] = useState<"pen" | "eraser" | "text">("pen");
+  const [activeTool, setActiveTool] = useState<
+    "pen" | "eraser" | "text" | "shape"
+  >("pen");
+  const [selectedShape, setSelectedShape] = useState<"circle" | "arrow" | null>(
+    null
+  );
+  const [shapeStart, setShapeStart] = useState<{ x: number; y: number } | null>(
+    null
+  );
+
   const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
   const [history, setHistory] = useState<ImageData[]>([]);
   const [redoStack, setRedoStack] = useState<ImageData[]>([]);
 
   const [strokeWidth, setStrokeWidth] = useState<number>(6);
   const [strokeColor, setStrokeColor] = useState<string>("#ff0000");
-  const [fontSize, setFontSize] = useState<number>(24);
   const [showThickness, setShowThickness] = useState<boolean>(false);
   const [showColor, setShowColor] = useState<boolean>(false);
-  const [showFont, setShowFont] = useState<boolean>(false);
+  const [showShapes, setShowShapes] = useState<boolean>(false);
 
   useEffect(() => {
     const bgCanvas = backgroundRef.current;
@@ -62,7 +70,11 @@ export const ImageEditor = ({ image, onSave, onClose }: Props) => {
 
       const maxWidth = window.innerWidth * 0.9;
       const maxHeight = window.innerHeight * 0.9;
-      const scaleFactor = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+      const scaleFactor = Math.min(
+        maxWidth / img.width,
+        maxHeight / img.height,
+        1
+      );
       setScale(scaleFactor);
     };
 
@@ -96,21 +108,34 @@ export const ImageEditor = ({ image, onSave, onClose }: Props) => {
       const { x, y } = getMousePos(e);
       const text = window.prompt("Digite o texto:");
       if (text && text.trim() !== "") {
-        const snap = ctx.getImageData(0, 0, drawingRef.current.width, drawingRef.current.height);
+        const snap = ctx.getImageData(
+          0,
+          0,
+          drawingRef.current.width,
+          drawingRef.current.height
+        );
         setHistory((prev) => [...prev, snap]);
         setRedoStack([]);
 
         ctx.globalCompositeOperation = "source-over";
         ctx.fillStyle = strokeColor;
-        ctx.font = `${fontSize}px Arial`;
+        ctx.font = `${strokeWidth * 4}px Arial`;
         ctx.fillText(text, x, y);
       }
       return;
     }
 
+    if (activeTool === "shape" && selectedShape) {
+      const { x, y } = getMousePos(e);
+      setShapeStart({ x, y });
+      return;
+    }
+
     setIsDrawing(true);
     const isErasing = activeTool === "eraser";
-    ctx.globalCompositeOperation = isErasing ? "destination-out" : "source-over";
+    ctx.globalCompositeOperation = isErasing
+      ? "destination-out"
+      : "source-over";
     ctx.lineWidth = strokeWidth;
     ctx.strokeStyle = isErasing ? "rgba(0,0,0,1)" : strokeColor;
 
@@ -118,17 +143,84 @@ export const ImageEditor = ({ image, onSave, onClose }: Props) => {
     const { x, y } = getMousePos(e);
     ctx.moveTo(x, y);
 
-    const snapshot = ctx.getImageData(0, 0, drawingRef.current.width, drawingRef.current.height);
+    const snapshot = ctx.getImageData(
+      0,
+      0,
+      drawingRef.current.width,
+      drawingRef.current.height
+    );
     setHistory((prev) => [...prev, snapshot]);
     setRedoStack([]);
   };
 
   const draw = (e: React.MouseEvent) => {
-    if (!isDrawing || !drawingCtxRef.current) return;
     const ctx = drawingCtxRef.current;
+    if (!ctx || !drawingRef.current) return;
+
+    if (activeTool === "shape" && selectedShape && shapeStart) {
+      const { x, y } = getMousePos(e);
+      const snapshot = history[history.length - 1];
+
+      if (snapshot) {
+        ctx.putImageData(snapshot, 0, 0);
+      } else {
+        ctx.clearRect(
+          0,
+          0,
+          drawingRef.current!.width,
+          drawingRef.current!.height
+        );
+      }
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+
+      const w = x - shapeStart.x;
+      const h = y - shapeStart.y;
+
+      if (selectedShape === "circle") {
+        ctx.beginPath();
+        ctx.ellipse(
+          shapeStart.x + w / 2,
+          shapeStart.y + h / 2,
+          Math.abs(w / 2),
+          Math.abs(h / 2),
+          0,
+          0,
+          2 * Math.PI
+        );
+        ctx.stroke();
+      }
+
+      if (selectedShape === "arrow") {
+        const angle = Math.atan2(h, w);
+        const headlen = 20 + strokeWidth * 2;
+        const toX = shapeStart.x + w;
+        const toY = shapeStart.y + h;
+
+        ctx.beginPath();
+        ctx.moveTo(shapeStart.x, shapeStart.y);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(
+          toX - headlen * Math.cos(angle - Math.PI / 6),
+          toY - headlen * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(
+          toX - headlen * Math.cos(angle + Math.PI / 6),
+          toY - headlen * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.stroke();
+      }
+
+      return;
+    }
+
+    if (!isDrawing) return;
 
     const isErasing = activeTool === "eraser";
-    ctx.globalCompositeOperation = isErasing ? "destination-out" : "source-over";
+    ctx.globalCompositeOperation = isErasing
+      ? "destination-out"
+      : "source-over";
     ctx.lineWidth = strokeWidth;
     ctx.strokeStyle = isErasing ? "rgba(0,0,0,1)" : strokeColor;
 
@@ -137,20 +229,84 @@ export const ImageEditor = ({ image, onSave, onClose }: Props) => {
     ctx.stroke();
   };
 
-  const stopDrawing = () => {
-    if (!drawingCtxRef.current) return;
+  const stopDrawing = (e?: React.MouseEvent) => {
+    const ctx = drawingCtxRef.current;
+    if (!ctx) return;
+
+    if (activeTool === "shape" && selectedShape && shapeStart && e) {
+      const { x, y } = getMousePos(e);
+      const w = x - shapeStart.x;
+      const h = y - shapeStart.y;
+
+      const snapshot = ctx.getImageData(
+        0,
+        0,
+        drawingRef.current!.width,
+        drawingRef.current!.height
+      );
+      setHistory((prev) => [...prev, snapshot]);
+      setRedoStack([]);
+
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+
+      if (selectedShape === "circle") {
+        ctx.beginPath();
+        ctx.ellipse(
+          shapeStart.x + w / 2,
+          shapeStart.y + h / 2,
+          Math.abs(w / 2),
+          Math.abs(h / 2),
+          0,
+          0,
+          2 * Math.PI
+        );
+        ctx.stroke(); // 🔹 apenas o contorno (sem preenchimento)
+      }
+
+      if (selectedShape === "arrow") {
+        const angle = Math.atan2(h, w);
+        const headlen = 20 + strokeWidth * 2;
+        const toX = shapeStart.x + w;
+        const toY = shapeStart.y + h;
+
+        ctx.beginPath();
+        ctx.moveTo(shapeStart.x, shapeStart.y);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(
+          toX - headlen * Math.cos(angle - Math.PI / 6),
+          toY - headlen * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(
+          toX - headlen * Math.cos(angle + Math.PI / 6),
+          toY - headlen * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.stroke();
+      }
+
+      setShapeStart(null);
+      return;
+    }
+
     setIsDrawing(false);
-    drawingCtxRef.current.closePath();
-    drawingCtxRef.current.globalCompositeOperation = "source-over";
+    ctx.closePath();
+    ctx.globalCompositeOperation = "source-over";
   };
 
   const handleUndo = () => {
-    if (!drawingRef.current || !drawingCtxRef.current || history.length === 0) return;
+    if (!drawingRef.current || !drawingCtxRef.current || history.length === 0)
+      return;
     const ctx = drawingCtxRef.current;
     const last = history[history.length - 1];
     const newHistory = history.slice(0, -1);
 
-    const snapshot = ctx.getImageData(0, 0, drawingRef.current.width, drawingRef.current.height);
+    const snapshot = ctx.getImageData(
+      0,
+      0,
+      drawingRef.current.width,
+      drawingRef.current.height
+    );
     setRedoStack((prev) => [...prev, snapshot]);
 
     ctx.putImageData(last, 0, 0);
@@ -158,12 +314,18 @@ export const ImageEditor = ({ image, onSave, onClose }: Props) => {
   };
 
   const handleRedo = () => {
-    if (!drawingRef.current || !drawingCtxRef.current || redoStack.length === 0) return;
+    if (!drawingRef.current || !drawingCtxRef.current || redoStack.length === 0)
+      return;
     const ctx = drawingCtxRef.current;
     const last = redoStack[redoStack.length - 1];
     const newRedo = redoStack.slice(0, -1);
 
-    const snapshot = ctx.getImageData(0, 0, drawingRef.current.width, drawingRef.current.height);
+    const snapshot = ctx.getImageData(
+      0,
+      0,
+      drawingRef.current.width,
+      drawingRef.current.height
+    );
     setHistory((prev) => [...prev, snapshot]);
 
     ctx.putImageData(last, 0, 0);
@@ -184,7 +346,6 @@ export const ImageEditor = ({ image, onSave, onClose }: Props) => {
     onSave(mergedCanvas.toDataURL("image/png"));
   };
 
-  // 🧩 Portal com animação de fade-in / scale
   return createPortal(
     <AnimatePresence>
       <Overlay
@@ -201,57 +362,136 @@ export const ImageEditor = ({ image, onSave, onClose }: Props) => {
           transition={{ type: "spring", duration: 0.3 }}
         >
           <TopControls>
-            <button className={activeTool === "pen" ? "active" : ""} onClick={() => setActiveTool("pen")} title="Lápis">✏️</button>
-            <button className={activeTool === "eraser" ? "active" : ""} onClick={() => setActiveTool("eraser")} title="Borracha">⌫</button>
-            <button className={activeTool === "text" ? "active" : ""} onClick={() => setActiveTool("text")} title="Texto">T</button>
+            <button
+              className={activeTool === "pen" ? "active" : ""}
+              onClick={() => setActiveTool("pen")}
+              title="Lápis"
+            >
+              ✏️
+            </button>
+            <button
+              className={activeTool === "eraser" ? "active" : ""}
+              onClick={() => setActiveTool("eraser")}
+              title="Borracha"
+            >
+              ⌫
+            </button>
+            <button
+              className={activeTool === "text" ? "active" : ""}
+              onClick={() => setActiveTool("text")}
+              title="Texto"
+            >
+              T
+            </button>
 
             <ThicknessWrapper>
-              <button onClick={() => setShowThickness((s) => !s)} title="Espessura">{strokeWidth}px</button>
+              <button
+                onClick={() => setShowThickness((s) => !s)}
+                title="Grossura"
+              >
+                {strokeWidth}px
+              </button>
               {showThickness && (
                 <ThicknessPanel>
-                  <label>Espessura: {strokeWidth}px</label>
-                  <input type="range" min={1} max={200} step={1} value={strokeWidth} onChange={(e) => setStrokeWidth(Number(e.target.value))} />
+                  <label>Grossura: {strokeWidth}px</label>
+                  <input
+                    type="range"
+                    min={1}
+                    max={50}
+                    step={1}
+                    value={strokeWidth}
+                    onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                  />
+                  <HelpText>Aplicado a traço e texto</HelpText>
                 </ThicknessPanel>
               )}
             </ThicknessWrapper>
 
             <ColorWrapper>
-              <button onClick={() => setShowColor((s) => !s)} title="Cor">🎨<ColorPreview style={{ background: strokeColor }} /></button>
+              <button onClick={() => setShowColor((s) => !s)} title="Cor">
+                🎨
+                <ColorPreview style={{ background: strokeColor }} />
+              </button>
               {showColor && (
                 <ColorPanel>
                   <label>Cores</label>
                   <div className="swatches">
                     {PRESET_COLORS.map((c) => (
-                      <button key={c} onClick={() => { setStrokeColor(c); setShowColor(false); }} className={c === strokeColor ? "active" : ""} style={{ background: c }} />
+                      <button
+                        key={c}
+                        onClick={() => {
+                          setStrokeColor(c);
+                          setShowColor(false);
+                        }}
+                        className={c === strokeColor ? "active" : ""}
+                        style={{ background: c }}
+                      />
                     ))}
                   </div>
                 </ColorPanel>
               )}
             </ColorWrapper>
 
-            <ThicknessWrapper>
-              <button onClick={() => setShowFont((s) => !s)} title="Tamanho da fonte">{fontSize}px</button>
-              {showFont && (
-                <ThicknessPanel>
-                  <label>Fonte: {fontSize}px</label>
-                  <input type="range" min={10} max={100} step={1} value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} />
-                </ThicknessPanel>
+            <ColorWrapper>
+              <button
+                onClick={() => {
+                  setActiveTool("shape");
+                  setShowShapes((s) => !s);
+                }}
+                title="Formas"
+              >
+                🔷
+              </button>
+              {showShapes && (
+                <ColorPanel>
+                  <label>Formas</label>
+                  <div className="swatches">
+                    <button
+                      onClick={() => {
+                        setSelectedShape("circle");
+                        setShowShapes(false);
+                      }}
+                    >
+                      Círculo
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedShape("arrow");
+                        setShowShapes(false);
+                      }}
+                    >
+                      Seta
+                    </button>
+                  </div>
+                </ColorPanel>
               )}
-            </ThicknessWrapper>
+            </ColorWrapper>
 
-            <button onClick={handleRedo} title="Refazer">↩</button>
-            <button onClick={handleUndo} title="Desfazer">↪</button>
+            <button onClick={handleRedo} title="Refazer">
+              ↩
+            </button>
+            <button onClick={handleUndo} title="Desfazer">
+              ↪
+            </button>
           </TopControls>
 
-          <CanvasWrapper style={{ width: `${imgSize.width * scale}px`, height: `${imgSize.height * scale}px` }}>
-            <StyledCanvas ref={backgroundRef} style={{ transform: `scale(${scale})` }} />
+          <CanvasWrapper
+            style={{
+              width: `${imgSize.width * scale}px`,
+              height: `${imgSize.height * scale}px`,
+            }}
+          >
+            <StyledCanvas
+              ref={backgroundRef}
+              style={{ transform: `scale(${scale})` }}
+            />
             <StyledCanvas
               ref={drawingRef}
               style={{ transform: `scale(${scale})` }}
               onMouseDown={startDrawing}
               onMouseMove={draw}
               onMouseUp={stopDrawing}
-              onMouseLeave={stopDrawing}
+              onMouseLeave={() => stopDrawing()}
             />
           </CanvasWrapper>
 
@@ -342,11 +582,17 @@ const ThicknessPanel = styled.div`
   padding: 10px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   gap: 8px;
   z-index: 20;
+`;
+
+const HelpText = styled.span`
+  font-size: 11px;
+  color: #666;
+  font-style: italic;
 `;
 
 const ColorWrapper = styled.div`
@@ -370,8 +616,10 @@ const ColorPanel = styled.div`
   padding: 10px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   display: flex;
+  flex-direction: column;
+
   flex-direction: column;
   gap: 8px;
   z-index: 20;
@@ -381,8 +629,7 @@ const ColorPanel = styled.div`
     flex-wrap: wrap;
   }
   .swatches button {
-    width: 28px;
-    height: 28px;
+    padding: 4px 8px;
     border-radius: 6px;
     border: 2px solid transparent;
     cursor: pointer;
