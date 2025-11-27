@@ -2,17 +2,22 @@ import { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
 
 interface TopBarProps {
-  isAdmin?: boolean; // controla se o usuário é admin
-  onLogout?: () => void; // função chamada ao clicar em sair
-  onAddUser?: () => void; // função chamada ao clicar em adicionar usuário
+  isAdmin?: boolean;
+  onLogout?: () => void;
+  onAddUser?: () => void;
+  onManageUsers?: () => void; // ✅ ADICIONADO
 }
 
-export const TopBar = ({ isAdmin = false, onLogout, onAddUser }: TopBarProps) => {
-  const [open, setOpen] = useState(false); // sidebar
-  const [menuOpen, setMenuOpen] = useState(false); // menu de perfil
+export const TopBar = ({
+  isAdmin = false,
+  onLogout,
+  onAddUser,
+  onManageUsers, // ✅ ADICIONADO
+}: TopBarProps) => {
+  const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Fecha o menu de perfil ao clicar fora
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -44,7 +49,14 @@ export const TopBar = ({ isAdmin = false, onLogout, onAddUser }: TopBarProps) =>
 
           {menuOpen && (
             <DropdownMenu>
-              {isAdmin && <MenuItem onClick={onAddUser}>Adicionar Usuário</MenuItem>}
+              {isAdmin && (
+                <MenuItem onClick={onAddUser}>Adicionar Usuário</MenuItem>
+              )}
+              {isAdmin && (
+                <MenuItem onClick={onManageUsers}>
+                  Administrar Usuários
+                </MenuItem>
+              )}
               <MenuItem onClick={onLogout}>Sair</MenuItem>
             </DropdownMenu>
           )}
@@ -126,8 +138,6 @@ const ProfileIcon = styled.img`
   }
 `;
 
-// ========== MENU DE PERFIL ==========
-
 const DropdownMenu = styled.div`
   position: absolute;
   top: 50px;
@@ -135,7 +145,7 @@ const DropdownMenu = styled.div`
   background-color: #1c1c1c;
   border: 1px solid #2a2a2a;
   border-radius: 8px;
-  min-width: 160px;
+  min-width: 180px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 500;
   animation: fadeIn 0.2s ease forwards;
@@ -153,7 +163,7 @@ const DropdownMenu = styled.div`
 `;
 
 const MenuItem = styled.div`
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 14px;
   color: #eee;
   cursor: pointer;

@@ -2,10 +2,12 @@ import styled, { createGlobalStyle } from "styled-components";
 import { TopBar } from "../../components/topBar/topBar";
 import { useState, useEffect } from "react";
 import { Boards } from "../boards";
-import { boardsAPI } from "../../configs/api";
+import { boardsAPI, sessionsAPI } from "../../configs/api"; // ✅ ADICIONAR sessionsAPI
 import { useNavigate } from "react-router-dom";
 import { FiImage } from "react-icons/fi";
 import { ImageGalleryModal } from "../boards/ImageGalleryModal";
+import { FloatingChat } from "../../components/chat/floatingChat";
+import { AdminUsersModal } from "../../components/userManager/userManager";
 
 interface Board {
   id: number;
@@ -44,6 +46,7 @@ export const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [galleryBoardId, setGalleryBoardId] = useState<number | null>(null);
   const [galleryBoardName, setGalleryBoardName] = useState<string>("");
+  const [showAdminModal, setShowAdminModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -113,7 +116,11 @@ export const Dashboard = () => {
   const openBoard = (id: number) => setSelectedBoardId(id);
   const closeModal = () => setSelectedBoardId(null);
 
-  const openGallery = (boardId: number, boardName: string, e: React.MouseEvent) => {
+  const openGallery = (
+    boardId: number,
+    boardName: string,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation();
     setGalleryBoardId(boardId);
     setGalleryBoardName(boardName);
@@ -140,8 +147,16 @@ export const Dashboard = () => {
       <DashBoardContainer>
         <TopBar
           isAdmin={isAdmin}
-          onLogout={() => navigate("/login")}
+          onLogout={() => {
+            const sessionId = localStorage.getItem("session_id");
+            if (sessionId) {
+              sessionsAPI.registerLogout(parseInt(sessionId));
+            }
+            localStorage.clear();
+            navigate("/login");
+          }}
           onAddUser={() => navigate("/register-user")}
+          onManageUsers={() => setShowAdminModal(true)}
         />
 
         <WelcomeMessage>
@@ -233,6 +248,22 @@ export const Dashboard = () => {
             onClose={closeGallery}
           />
         )}
+
+        {currentUser && (
+          <FloatingChat
+            currentUser={{
+              ...currentUser,
+              isAdmin: currentUser.isAdmin || currentUser.role === "admin",
+            }}
+          />
+        )}
+
+        {showAdminModal && currentUser && (
+          <AdminUsersModal
+            companyId={currentUser.company_id}
+            onClose={() => setShowAdminModal(false)}
+          />
+        )}
       </DashBoardContainer>
     </>
   );
@@ -280,7 +311,7 @@ const WelcomeMessage = styled.div`
     font-size: 14px;
   }
 
-  button{
+  button {
     margin-bottom: 15px;
   }
 `;
@@ -324,7 +355,7 @@ const BoardInfo = styled.div`
   flex-direction: column;
   gap: 5px;
   flex: 1;
-  
+
   .board-name {
     font-weight: 700;
     font-size: 18px;
@@ -409,7 +440,7 @@ const ModalHeader = styled.div`
   align-items: center;
   padding: 22px 30px;
   border-bottom: 1px solid #2a2f3f;
-  
+
   h2 {
     margin: 0;
     color: #ff006c;
@@ -437,7 +468,7 @@ const GalleryButtonHeader = styled.button`
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s;
-  
+
   &:hover {
     background-color: #ff006c;
     color: white;
@@ -466,7 +497,7 @@ const CloseButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  
+
   &:hover {
     background-color: #2a2f3f;
     color: #fff;
