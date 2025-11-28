@@ -8,6 +8,7 @@ import { FiImage } from "react-icons/fi";
 import { ImageGalleryModal } from "../boards/ImageGalleryModal";
 import { FloatingChat } from "../../components/chat/floatingChat";
 import { AdminUsersModal } from "../../components/userManager/userManager";
+import { AttachmentsModal } from "../../components/attachment/attachmentsModal";
 
 interface Board {
   id: number;
@@ -47,6 +48,7 @@ export const Dashboard = () => {
   const [galleryBoardId, setGalleryBoardId] = useState<number | null>(null);
   const [galleryBoardName, setGalleryBoardName] = useState<string>("");
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -264,6 +266,15 @@ export const Dashboard = () => {
             onClose={() => setShowAdminModal(false)}
           />
         )}
+
+        {currentUser && showAttachmentsModal && (
+  <AttachmentsModal
+    companyId={currentUser.company_id}
+    userId={currentUser.id}
+    isAdmin={isAdmin}
+    onClose={() => setShowAttachmentsModal(false)}
+  />
+)}
       </DashBoardContainer>
     </>
   );

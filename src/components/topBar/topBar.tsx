@@ -5,14 +5,16 @@ interface TopBarProps {
   isAdmin?: boolean;
   onLogout?: () => void;
   onAddUser?: () => void;
-  onManageUsers?: () => void; // ✅ ADICIONADO
+  onManageUsers?: () => void;
+  onAttachments?: () => void;
 }
 
 export const TopBar = ({
   isAdmin = false,
   onLogout,
   onAddUser,
-  onManageUsers, // ✅ ADICIONADO
+  onManageUsers,
+  onAttachments,
 }: TopBarProps) => {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,9 +35,6 @@ export const TopBar = ({
       <TopBarContainer>
         <LeftSection>
           <Hamburger onClick={() => setOpen(!open)}>
-            <span></span>
-            <span></span>
-            <span></span>
           </Hamburger>
           <Logo src="/logo/hauzlogo.png" alt="Hauz" />
         </LeftSection>
@@ -49,6 +48,7 @@ export const TopBar = ({
 
           {menuOpen && (
             <DropdownMenu>
+              <MenuItem onClick={onAttachments}>Anexos</MenuItem>{" "}
               {isAdmin && (
                 <MenuItem onClick={onAddUser}>Adicionar Usuário</MenuItem>
               )}
