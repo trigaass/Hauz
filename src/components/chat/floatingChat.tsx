@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
-import { FiMessageCircle, FiX, FiMinus, FiSend, FiBell } from "react-icons/fi";
+import { FiMessageCircle, FiX, FiMinus, FiSend } from "react-icons/fi";
 import { chatAPI } from "../../configs/api";
 import { io, Socket } from "socket.io-client";
 
