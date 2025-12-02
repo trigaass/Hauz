@@ -6,7 +6,7 @@ interface TopBarProps {
   onLogout?: () => void;
   onAddUser?: () => void;
   onManageUsers?: () => void;
-  onAttachments?: () => void;
+  onAttachments?: () => void; // ✅ Já estava declarado
 }
 
 export const TopBar = ({
@@ -14,7 +14,7 @@ export const TopBar = ({
   onLogout,
   onAddUser,
   onManageUsers,
-  onAttachments,
+  onAttachments, // ✅ Receber a função
 }: TopBarProps) => {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -35,6 +35,9 @@ export const TopBar = ({
       <TopBarContainer>
         <LeftSection>
           <Hamburger onClick={() => setOpen(!open)}>
+            <span></span>
+            <span></span>
+            <span></span>
           </Hamburger>
           <Logo src="/logo/hauzlogo.png" alt="Hauz" />
         </LeftSection>
@@ -48,16 +51,40 @@ export const TopBar = ({
 
           {menuOpen && (
             <DropdownMenu>
-              <MenuItem onClick={onAttachments}>Anexos</MenuItem>{" "}
+              {/* ✅ SEMPRE MOSTRAR ANEXOS PARA TODOS */}
+              <MenuItem onClick={() => {
+                setMenuOpen(false);
+                onAttachments?.(); // ✅ Chamar a função
+              }}>
+                📎 Anexos
+              </MenuItem>
+              
               {isAdmin && (
-                <MenuItem onClick={onAddUser}>Adicionar Usuário</MenuItem>
+                <>
+                  <MenuItem onClick={() => {
+                    setMenuOpen(false);
+                    onAddUser?.();
+                  }}>
+                    👤 Adicionar Usuário
+                  </MenuItem>
+                  
+                  <MenuItem onClick={() => {
+                    setMenuOpen(false);
+                    onManageUsers?.();
+                  }}>
+                    👥 Administrar Usuários
+                  </MenuItem>
+                </>
               )}
-              {isAdmin && (
-                <MenuItem onClick={onManageUsers}>
-                  Administrar Usuários
-                </MenuItem>
-              )}
-              <MenuItem onClick={onLogout}>Sair</MenuItem>
+              
+              <MenuDivider />
+              
+              <MenuItem onClick={() => {
+                setMenuOpen(false);
+                onLogout?.();
+              }}>
+                🚪 Sair
+              </MenuItem>
             </DropdownMenu>
           )}
         </RightSection>
@@ -145,7 +172,7 @@ const DropdownMenu = styled.div`
   background-color: #1c1c1c;
   border: 1px solid #2a2a2a;
   border-radius: 8px;
-  min-width: 180px;
+  min-width: 200px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 500;
   animation: fadeIn 0.2s ease forwards;
@@ -168,6 +195,9 @@ const MenuItem = styled.div`
   color: #eee;
   cursor: pointer;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
   &:hover {
     background: #2a2a2a;
@@ -182,6 +212,12 @@ const MenuItem = styled.div`
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
   }
+`;
+
+const MenuDivider = styled.div`
+  height: 1px;
+  background: #2a2a2a;
+  margin: 4px 0;
 `;
 
 interface SidebarProps {

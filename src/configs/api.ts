@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://hauzserver.onrender.com";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://hauzserver.onrender.com";
 
 export const API_ENDPOINTS = {
   LOGIN: `${API_BASE_URL}/api/auth/login`,
@@ -15,13 +16,20 @@ export const API_ENDPOINTS = {
 export const boardsAPI = {
   // Buscar todos os boards de uma empresa
   getAll: async (companyId: number) => {
-    const response = await fetch(`${API_ENDPOINTS.BOARDS}?company_id=${companyId}`);
+    const response = await fetch(
+      `${API_ENDPOINTS.BOARDS}?company_id=${companyId}`
+    );
     if (!response.ok) throw new Error("Erro ao carregar boards");
     return response.json();
   },
 
   // Criar board
-  create: async (data: { name: string; company_id: number; description?: string }) => {
+  create: async (data: {
+    name: string;
+    company_id: number;
+    created_by: number; // ✅ ADICIONAR
+    description?: string;
+  }) => {
     const response = await fetch(API_ENDPOINTS.BOARDS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -70,11 +78,14 @@ export const boardsAPI = {
 
   // Remover usuário de um board
   removeUser: async (boardId: number, userId: number, adminId: number) => {
-    const response = await fetch(`${API_ENDPOINTS.BOARDS}/${boardId}/users/${userId}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ admin_id: adminId }),
-    });
+    const response = await fetch(
+      `${API_ENDPOINTS.BOARDS}/${boardId}/users/${userId}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ admin_id: adminId }),
+      }
+    );
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || "Erro ao remover usuário");
@@ -91,7 +102,11 @@ export const cardsAPI = {
     return response.json();
   },
 
-  create: async (data: { board_id: number; title: string; position: number }) => {
+  create: async (data: {
+    board_id: number;
+    title: string;
+    position: number;
+  }) => {
     const response = await fetch(API_ENDPOINTS.CARDS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -128,7 +143,12 @@ export const tasksAPI = {
     return response.json();
   },
 
-  create: async (data: { card_id: number; content: string; position: number; image?: File }) => {
+  create: async (data: {
+    card_id: number;
+    content: string;
+    position: number;
+    image?: File;
+  }) => {
     const formData = new FormData();
     formData.append("card_id", data.card_id.toString());
     formData.append("content", data.content);
@@ -148,7 +168,10 @@ export const tasksAPI = {
     return response.json();
   },
 
-  update: async (id: number, data: { content?: string; completed?: boolean }) => {
+  update: async (
+    id: number,
+    data: { content?: string; completed?: boolean }
+  ) => {
     const response = await fetch(`${API_ENDPOINTS.TASKS}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -207,7 +230,12 @@ export const chatAPI = {
   },
 
   // Buscar mensagens de uma conversa
-  getMessages: async (conversationId: number, userId: number, limit = 50, offset = 0) => {
+  getMessages: async (
+    conversationId: number,
+    userId: number,
+    limit = 50,
+    offset = 0
+  ) => {
     const response = await fetch(
       `${API_ENDPOINTS.CHAT}/conversations/${conversationId}/messages?user_id=${userId}&limit=${limit}&offset=${offset}`
     );
@@ -216,7 +244,11 @@ export const chatAPI = {
   },
 
   // Enviar mensagem
-  sendMessage: async (conversationId: number, senderId: number, content: string) => {
+  sendMessage: async (
+    conversationId: number,
+    senderId: number,
+    content: string
+  ) => {
     const response = await fetch(`${API_ENDPOINTS.CHAT}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -271,13 +303,15 @@ export const sessionsAPI = {
 
   // Buscar tempo de todos os usuários (Admin)
   getAllUsersTime: async (companyId: number) => {
-    const response = await fetch(`${API_BASE_URL}/api/sessions/users/all?company_id=${companyId}`);
+    const response = await fetch(
+      `${API_BASE_URL}/api/sessions/users/all?company_id=${companyId}`
+    );
     if (!response.ok) throw new Error("Erro ao buscar tempo dos usuários");
     return response.json();
   },
 };
 
-// ========== ATTACHMENTS API ========== 
+// ========== ATTACHMENTS API ==========
 export const attachmentsAPI = {
   // Buscar todos os anexos da empresa
   getAll: async (companyId: number, userId: number) => {
@@ -327,14 +361,11 @@ export const attachmentsAPI = {
 
   // Marcar como visto
   markAsViewed: async (id: number, userId: number) => {
-    const response = await fetch(
-      `${API_ENDPOINTS.ATTACHMENTS}/${id}/view`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
-      }
-    );
+    const response = await fetch(`${API_ENDPOINTS.ATTACHMENTS}/${id}/view`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId }),
+    });
     if (!response.ok) throw new Error("Erro ao marcar como visto");
     return response.json();
   },

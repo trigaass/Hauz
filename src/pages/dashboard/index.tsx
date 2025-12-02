@@ -2,7 +2,7 @@ import styled, { createGlobalStyle } from "styled-components";
 import { TopBar } from "../../components/topBar/topBar";
 import { useState, useEffect } from "react";
 import { Boards } from "../boards";
-import { boardsAPI, sessionsAPI } from "../../configs/api"; // ✅ ADICIONAR sessionsAPI
+import { boardsAPI, sessionsAPI } from "../../configs/api";
 import { useNavigate } from "react-router-dom";
 import { FiImage } from "react-icons/fi";
 import { ImageGalleryModal } from "../boards/ImageGalleryModal";
@@ -48,7 +48,7 @@ export const Dashboard = () => {
   const [galleryBoardId, setGalleryBoardId] = useState<number | null>(null);
   const [galleryBoardName, setGalleryBoardName] = useState<string>("");
   const [showAdminModal, setShowAdminModal] = useState(false);
-  const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
+  const [showAttachmentsModal, setShowAttachmentsModal] = useState(false); // ✅ Estado para modal de anexos
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -83,23 +83,35 @@ export const Dashboard = () => {
 
   const handleNewBoard = async () => {
     if (!currentUser) return;
+
     const name = prompt("Nome do board:");
     if (!name) return;
 
     const description = prompt("Descrição do board (opcional):");
 
     try {
-      await boardsAPI.create({
+      const result = await boardsAPI.create({
         name,
         description: description ?? undefined,
         company_id: currentUser.company_id,
+        created_by: currentUser.id,
       });
 
-      alert("Board criado com sucesso!");
-      loadBoards(currentUser.company_id);
+      console.log("Resposta da API:", result);
+
+      if (result.boardId || result.message) {
+        alert("Board criado com sucesso!");
+        loadBoards(currentUser.company_id);
+      } else {
+        throw new Error("Resposta inesperada do servidor");
+      }
     } catch (error) {
       console.error("Erro ao criar board:", error);
-      alert("Erro ao criar board.");
+      alert(
+        `Erro ao criar board: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`
+      );
     }
   };
 
@@ -159,6 +171,7 @@ export const Dashboard = () => {
           }}
           onAddUser={() => navigate("/register-user")}
           onManageUsers={() => setShowAdminModal(true)}
+          onAttachments={() => setShowAttachmentsModal(true)} // ✅ ADICIONAR ESTA LINHA
         />
 
         <WelcomeMessage>
@@ -267,14 +280,15 @@ export const Dashboard = () => {
           />
         )}
 
-        {currentUser && showAttachmentsModal && (
-  <AttachmentsModal
-    companyId={currentUser.company_id}
-    userId={currentUser.id}
-    isAdmin={isAdmin}
-    onClose={() => setShowAttachmentsModal(false)}
-  />
-)}
+        {/* ✅ MODAL DE ANEXOS - CORRIGIDO */}
+        {showAttachmentsModal && currentUser && (
+          <AttachmentsModal
+            companyId={currentUser.company_id}
+            userId={currentUser.id}
+            isAdmin={isAdmin}
+            onClose={() => setShowAttachmentsModal(false)}
+          />
+        )}
       </DashBoardContainer>
     </>
   );
